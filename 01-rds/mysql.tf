@@ -55,7 +55,7 @@ resource "aws_db_instance" "mysql_rds_replica" {
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   publicly_accessible = true
-  performance_insights_enabled = true
+  performance_insights_enabled = false
   skip_final_snapshot = true
 
   tags = {
