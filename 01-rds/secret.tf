@@ -20,9 +20,9 @@ resource "aws_secretsmanager_secret_version" "aurora_credentials_version" {
 
   # Encode credentials as a JSON string and store as the secret value
   secret_string = jsonencode({
-    user            = "admin"                             # Static username for the Packer user
-    password        = random_password.aurora_password.result # Dynamic, securely generated password
-    endpoint        = split(":", aws_rds_cluster.aurora_cluster.endpoint)[0]
+    user     = "admin"                                # Static username for the Packer user
+    password = random_password.aurora_password.result # Dynamic, securely generated password
+    endpoint = split(":", aws_rds_cluster.aurora_cluster.endpoint)[0]
   })
 }
 
@@ -44,7 +44,7 @@ resource "aws_secretsmanager_secret_version" "mysql_credentials_version" {
 
   # Encode credentials as a JSON string and store as the secret value
   secret_string = jsonencode({
-    user     = "admin"                             # Static username for the Packer user
+    user     = "admin"                               # Static username for the Packer user
     password = random_password.mysql_password.result # Dynamic, securely generated password
     endpoint = split(":", aws_db_instance.mysql_rds.endpoint)[0]
   })
