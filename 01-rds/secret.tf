@@ -46,6 +46,6 @@ resource "aws_secretsmanager_secret_version" "mysql_credentials_version" {
   secret_string = jsonencode({
     user     = "admin"                             # Static username for the Packer user
     password = random_password.mysql_password.result # Dynamic, securely generated password
-    #endpoint = split(":", aws_db_instance.postgres_rds.endpoint)[0]
+    endpoint = split(":", aws_db_instance.mysql_rds.endpoint)[0]
   })
 }

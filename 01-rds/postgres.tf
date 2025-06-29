@@ -31,7 +31,7 @@ resource "aws_db_instance" "mysql_rds" {
   backup_retention_period = 5
   backup_window = "07:00-09:00"
 
-  performance_insights_enabled = true
+  performance_insights_enabled = false
 
   tags = {
     Name = "MySQL RDS Instance"
