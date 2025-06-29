@@ -1,17 +1,17 @@
 ############################################
-# SECURITY GROUP: HTTP (PORT 80)
+# SECURITY GROUP: RDS (PORT 3306)
 ############################################
 
 resource "aws_security_group" "rds_sg" {
   name        = "rds-sg" # Name of the security group
-  description = "Security group to allow port 5432 access and open all outbound traffic"
+  description = "Security group to allow port 3306 access and open all outbound traffic"
   vpc_id      = aws_vpc.rds-vpc.id # Associate SG with the rds VPC
 
   # Ingress Rule — Allow Postgres traffic from anywhere
   ingress {
-    from_port   = 5432          # Starting port — HTTP
-    to_port     = 5432          # Ending port — HTTP
-    protocol    = "tcp"         # TCP protocol required for HTTP
+    from_port   = 3306          # Starting port
+    to_port     = 3306          # Ending port 
+    protocol    = "tcp"         # TCP protocol 
     cidr_blocks = ["0.0.0.0/0"] # ⚠️ Open to all IPv4 addresses — not secure for production
   }
 
