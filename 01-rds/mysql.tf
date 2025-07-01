@@ -57,6 +57,8 @@ resource "aws_db_instance" "mysql_rds" {
   tags = {
     Name = "MySQL RDS Instance"
   }
+  # Custom parameter group for MySQL settings
+  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
 }
 
 ##################################################################
@@ -97,6 +99,8 @@ resource "aws_db_instance" "mysql_rds_replica" {
   tags = {
     Name = "MySQL RDS Read Replica"
   }
+  # Custom parameter group for MySQL settings
+  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
 }
 
 ##########################################################
@@ -117,5 +121,16 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
   # Tag for identification
   tags = {
     Name = "RDS Subnet Group"
+  }
+}
+
+resource "aws_db_parameter_group" "mysql_custom_params" {
+  name        = "mysql-custom-params"
+  family      = "mysql8.0"  # Must match your MySQL major version
+  description = "Custom parameter group with log_bin_trust_function_creators enabled"
+
+  parameter {
+    name  = "log_bin_trust_function_creators"
+    value = "1"
   }
 }
