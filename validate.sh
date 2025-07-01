@@ -1,66 +1,63 @@
 # #!/bin/bash
 
 # # Set your region if needed
-# AWS_REGION="us-east-2"
+AWS_REGION="us-east-2"
 
-# # Cluster identifier from your Terraform
-# CLUSTER_ID="aurora-postgres-cluster"
-
-# # Get the primary endpoint (writer) from the cluster description
-# PRIMARY_ENDPOINT=$(aws rds describe-db-clusters \
-#   --region "$AWS_REGION" \
-#   --db-cluster-identifier "$CLUSTER_ID" \
-#   --query 'DBClusters[0].Endpoint' \
-#   --output text)
+echo "NOTE: Downloading sakila sample data."
+cd 01-rds
+cd data
+rm -f -r sakila-db
+rm -f -r sakila*.zip*
+wget -q https://downloads.mysql.com/docs/sakila-db.zip
+unzip sakila-db.zip
+cd ..
+cd ..
 
 # echo "NOTE: Primary Aurora Endpoint: $PRIMARY_ENDPOINT"
 
-# # Name of the secret created in Terraform
-# SECRET_NAME="aurora-credentials"
+# Name of the secret created in Terraform
+SECRET_NAME="mysql-credentials"
 
-# # Retrieve and parse the secret
-# SECRET_JSON=$(aws secretsmanager get-secret-value \
-#   --region "$AWS_REGION" \
-#   --secret-id "$SECRET_NAME" \
-#   --query 'SecretString' \
-#   --output text)
+# Retrieve and parse the secret
+SECRET_JSON=$(aws secretsmanager get-secret-value \
+   --region "$AWS_REGION" \
+   --secret-id "$SECRET_NAME" \
+   --query 'SecretString' \
+   --output text)
 
-# # Extract user and password using jq
-# USER=$(echo "$SECRET_JSON" | jq -r .user)
-# PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
+# Extract user and password using jq
+USER=$(echo "$SECRET_JSON" | jq -r .user)
+PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
+ENDPOINT=$(echo "$SECRET_JSON" | jq -r .endpoint)
 
-# rm -f -r /tmp/db_load.log
+echo "NOTE: Primary RDS Endpoint: $ENDPOINT"
+echo "NOTE: Loading 'sakila' data into RDS"
 
-# echo "NOTE: Loading 'pagila' data into Aurora"
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" -e "CREATE DATABASE IF NOT EXISTS sakila;"
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-schema.sql
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
 
-# PGPASSWORD=$PASSWORD psql -h $PRIMARY_ENDPOINT -U postgres -d postgres -f ./01-rds/data/pagila-db.sql >> /tmp/db_load.log
-# PGPASSWORD=$PASSWORD psql -h $PRIMARY_ENDPOINT -U postgres -d pagila -f ./01-rds/data/pagila-schema.sql >> /tmp/db_load.log
-# PGPASSWORD=$PASSWORD psql -h $PRIMARY_ENDPOINT -U postgres -d pagila -f ./01-rds/data/pagila-data.sql >> /tmp/db_load.log
+# Name of the secret created in Terraform
 
-# RDS_ENDPOINT=$(aws rds describe-db-instances \
-#   --region us-east-2 \
-#   --db-instance-identifier postgres-rds-instance \
-#   --query "DBInstances[0].Endpoint.Address" \
-#   --output text)
+SECRET_NAME="aurora-credentials"
 
-# echo "NOTE: Primary RDS Endpoint: $RDS_ENDPOINT"
+# Retrieve and parse the secret
+SECRET_JSON=$(aws secretsmanager get-secret-value \
+   --region "$AWS_REGION" \
+   --secret-id "$SECRET_NAME" \
+   --query 'SecretString' \
+   --output text)
 
-# # Name of the secret created in Terraform
-# SECRET_NAME="postgres-credentials"
+# Extract user and password using jq
+USER=$(echo "$SECRET_JSON" | jq -r .user)
+PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
+ENDPOINT=$(echo "$SECRET_JSON" | jq -r .endpoint)
 
-# # Retrieve and parse the secret
-# SECRET_JSON=$(aws secretsmanager get-secret-value \
-#   --region "$AWS_REGION" \
-#   --secret-id "$SECRET_NAME" \
-#   --query 'SecretString' \
-#   --output text)
+echo "NOTE: Loading 'sakila' data into Aurora"
+echo "NOTE: Primary Auroa Endpoint: $ENDPOINT"
 
-# # Extract user and password using jq
-# USER=$(echo "$SECRET_JSON" | jq -r .user)
-# PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" -e "CREATE DATABASE IF NOT EXISTS sakila;"
+sed -i 's/^\(.*default_storage_engine.*\)/-- \1/' ./01-rds/data/sakila-db/sakila-schema.sql
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-schema.sql
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
 
-# echo "NOTE: Loading 'pagila' data into RDS"
-
-# PGPASSWORD=$PASSWORD psql -h $RDS_ENDPOINT -U postgres -d postgres -f ./01-rds/data/pagila-db.sql >> /tmp/db_load.log
-# PGPASSWORD=$PASSWORD psql -h $RDS_ENDPOINT -U postgres -d pagila -f ./01-rds/data/pagila-schema.sql >> /tmp/db_load.log
-# PGPASSWORD=$PASSWORD psql -h $RDS_ENDPOINT -U postgres -d pagila -f ./01-rds/data/pagila-data.sql >> /tmp/db_load.log

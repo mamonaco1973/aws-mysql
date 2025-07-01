@@ -5,3 +5,7 @@
 *.terraform.*
 *.pem
 password.txt
+sakila-db.*
+sakila-data.sql  
+sakila-schema.sql  
+sakila.mwb
