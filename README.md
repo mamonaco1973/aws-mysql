@@ -125,31 +125,70 @@ After applying the Terraform scripts, the following AWS resources will be create
 
 Query 1:
 ```sql
--- Select the film title and full actor name for each film
 SELECT
-    f.title AS film_title,                                      -- Get the film's title from the 'film' table
-    a.first_name || ' ' || a.last_name AS actor_name            -- Concatenate actor's first and last name as 'actor_name'
+    -- Select the film title from the 'film' table and label the column 'film_title'
+    f.title AS film_title,
+
+    -- Concatenate the actor's first and last name with a space between them and label the column 'actor_name'
+    CONCAT(a.first_name, ' ', a.last_name) AS actor_name
+
 FROM
-    film f                                                      -- From the 'film' table aliased as 'f'
-JOIN film_actor fa ON f.film_id = fa.film_id                    -- Join with 'film_actor' to link films to their actors
-JOIN actor a ON fa.actor_id = a.actor_id                        -- Join with 'actor' table to get actor details
-ORDER BY f.title, actor_name                                    -- Order the results alphabetically by film title, then actor name
-LIMIT 20;                                                       -- Return only the first 20 results
+    -- Use the 'film' table as the main source of data (alias 'f')
+    sakila.film f
+
+    -- Join the 'film_actor' link table to associate films with their actors by film_id
+    JOIN sakila.film_actor fa
+        ON f.film_id = fa.film_id
+
+    -- Join the 'actor' table to get actor name details by actor_id
+    JOIN sakila.actor a
+        ON fa.actor_id = a.actor_id
+
+-- Sort the results first by film title alphabetically, then by actor name alphabetically within each film
+ORDER BY
+    f.title,
+    actor_name
+
+-- Return only the first 20 rows of the result set
+LIMIT 20;                                                   
 ```
 
 Query 2:
 
 ```sql
--- Select film titles and a comma-separated list of all actors in each film
 SELECT
-    f.title,                                                              -- Get the film's title from the 'film' table
-    STRING_AGG(a.first_name || ' ' || a.last_name, ', ') AS actor_names  -- Combine all actor full names into one comma-separated string
+    -- Select the film title from the 'film' table
+    f.title,
+
+    -- Concatenate all actor full names (first + last name) into a single string
+    -- GROUP_CONCAT builds this list, ordering by actor last name, separating each with a comma and space
+    GROUP_CONCAT(
+        CONCAT(a.first_name, ' ', a.last_name)
+        ORDER BY a.last_name
+        SEPARATOR ', '
+    ) AS actor_names
+
 FROM
-    film f                                                                -- From the 'film' table aliased as 'f'
-JOIN film_actor fa ON f.film_id = fa.film_id                              -- Join with 'film_actor' to link each film to its actors
-JOIN actor a ON fa.actor_id = a.actor_id                                  -- Join with 'actor' table to get actor names
-GROUP BY f.title                                                           -- Group results by film title so each row is one film
-ORDER BY f.title                                                           -- Sort the results alphabetically by film title
-LIMIT 20;                                                                  -- Return only the first 10 films
+    -- Use the 'film' table as the starting point (aliased as 'f')
+    sakila.film f
+
+    -- Join 'film_actor' to link films to their actors via film_id
+    JOIN sakila.film_actor fa
+        ON f.film_id = fa.film_id
+
+    -- Join 'actor' to get the actual actor names via actor_id
+    JOIN sakila.actor a
+        ON fa.actor_id = a.actor_id
+
+-- Group results by film title so each row represents a unique film
+GROUP BY
+    f.title
+
+-- Sort the output rows alphabetically by film title
+ORDER BY
+    f.title
+
+-- Only return the first 10 rows (the top 10 film titles alphabetically)
+LIMIT 10;
 ```
 
