@@ -50,7 +50,7 @@ When deploying MySQL on AWS, Amazon RDS for MySQL and Amazon Aurora MySQL-Compat
 * [An AWS Account](https://aws.amazon.com/console/)
 * [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 
 * [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
-* [MySQL `myqsl` client](https://www.bytebase.com/reference/mysql/how-to/how-to-install-mysql-client-on-mac-ubuntu-centos-windows/) - `apt install mysql`
+* [MySQL `myqsl` client](https://www.bytebase.com/reference/mysql/how-to/how-to-install-mysql-client-on-mac-ubuntu-centos-windows/) - `apt install mysql-client`
 * [MySQL Workbench](https://dev.mysql.com/downloads/workbench/)
 
 If this is your first time watching our content, we recommend starting with this video: [AWS + Terraform: Easy Setup](https://youtu.be/BCMQo0CB9wk). It provides a step-by-step guide to properly configure Terraform, Packer, and the AWS CLI.
