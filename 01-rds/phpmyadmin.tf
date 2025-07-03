@@ -5,7 +5,7 @@ resource "aws_apprunner_service" "phpmyadmin" {
   source_configuration {
 
     auto_deployments_enabled = false
-    
+
     image_repository {
       image_identifier      = "public.ecr.aws/docker/library/phpmyadmin:latest"
       image_repository_type = "ECR_PUBLIC" # Works for Docker Hub
@@ -14,8 +14,6 @@ resource "aws_apprunner_service" "phpmyadmin" {
         port = "80"
         runtime_environment_variables = {
           PMA_HOST     = split(":", aws_db_instance.mysql_rds.endpoint)[0]
-          PMA_USER     = "admin"
-          PMA_PASSWORD = random_password.mysql_password.result
         }
       }
     }
