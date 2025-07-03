@@ -78,16 +78,6 @@ resource "aws_apprunner_service" "phpmyadmin" {
     healthy_threshold   = 1
     unhealthy_threshold = 5
   }
-
-  auto_scaling_configuration_arn = aws_apprunner_auto_scaling_configuration.phpmyadmin.arn
-}
-
-# Auto-scaling configuration
-resource "aws_apprunner_auto_scaling_configuration" "phpmyadmin" {
-  auto_scaling_configuration_name = "phpmyadmin-auto-scaling"
-  max_concurrency = 50
-  max_size        = 1
-  min_size        = 1
 }
 
 # Outputs
