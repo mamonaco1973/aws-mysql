@@ -51,7 +51,6 @@ When deploying MySQL on AWS, Amazon RDS for MySQL and Amazon Aurora MySQL-Compat
 * [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 
 * [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
 * [MySQL `myqsl` client](https://www.bytebase.com/reference/mysql/how-to/how-to-install-mysql-client-on-mac-ubuntu-centos-windows/) - `apt install mysql-client`
-* [MySQL Workbench](https://dev.mysql.com/downloads/workbench/)
 
 If this is your first time watching our content, we recommend starting with this video: [AWS + Terraform: Easy Setup](https://youtu.be/BCMQo0CB9wk). It provides a step-by-step guide to properly configure Terraform, Packer, and the AWS CLI.
 
@@ -119,9 +118,14 @@ After applying the Terraform scripts, the following AWS resources will be create
 - Reader instance: `aurora_instance_reader`
 - Subnet group: `aurora_subnet_group`
 
-## MySQL WorkBench Demo
+### AppRunner
 
-![workbench](workbench.png)
+- PhpMyAdmin Instance to RDS: `phpmyadmin-rds`
+- PhpMyAdmin Instance to Aurora: `phpmyadmin-aurora`
+
+## Accessing via `phpMyAdmin`
+
+![phpmyadmin](phpmyadmin.png)
 
 Query 1:
 ```sql
