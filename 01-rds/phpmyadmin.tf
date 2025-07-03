@@ -47,7 +47,7 @@ resource "aws_apprunner_service" "phpmyadmin" {
 
   source_configuration {
     image_repository {
-      image_identifier      = "phpmyadmin/phpmyadmin:latest"
+      image_identifier      = "public.ecr.aws/docker/library/phpmyadmin:latest"
       image_repository_type = "ECR_PUBLIC" # Works for Docker Hub
 
       image_configuration {
