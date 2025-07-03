@@ -69,7 +69,7 @@ resource "aws_apprunner_service" "phpmyadmin" {
     cpu    = "1024" # 1 vCPU
     memory = "2048" # 2GB RAM
   }
-W
+
   health_check_configuration {
     protocol            = "TCP"
     path                = "/"
