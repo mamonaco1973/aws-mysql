@@ -59,10 +59,6 @@ resource "aws_apprunner_service" "phpmyadmin" {
         }
       }
     }
-
-    authentication_configuration {
-      access_role_arn = aws_iam_role.apprunner_access_role.arn
-    }
   }
 
   instance_configuration {
