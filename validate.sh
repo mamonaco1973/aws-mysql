@@ -112,3 +112,32 @@ mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/s
 
 # Load Sakila data into Aurora
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
+
+
+#!/usr/bin/env bash
+
+# Retrieve URL for phpmyadmin-rds
+rds_url=$(aws apprunner list-services \
+  --region us-east-2 \
+  --query "ServiceSummaryList[?ServiceName=='phpmyadmin-rds'].ServiceArn" \
+  --output text | \
+  xargs -I {} aws apprunner describe-service \
+    --region us-east-2 \
+    --service-arn {} \
+    --query "Service.ServiceUrl" \
+    --output text)
+
+# Retrieve URL for phpmyadmin-aurora
+aurora_url=$(aws apprunner list-services \
+  --region us-east-2 \
+  --query "ServiceSummaryList[?ServiceName=='phpmyadmin-aurora'].ServiceArn" \
+  --output text | \
+  xargs -I {} aws apprunner describe-service \
+    --region us-east-2 \
+    --service-arn {} \
+    --query "Service.ServiceUrl" \
+    --output text)
+
+# Output the results
+echo "NOTE: phpMyAdmin RDS URL:     https://$rds_url"
+echo "NOTE: phpMyAdmin Aurora URL:  https://$aurora_url"
