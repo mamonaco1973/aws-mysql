@@ -126,7 +126,7 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 
 resource "aws_db_parameter_group" "mysql_custom_params" {
   name        = "mysql-custom-params"
-  family      = "mysql8.0"  # Must match your MySQL major version
+  family      = "mysql8.0" # Must match your MySQL major version
   description = "Custom parameter group with log_bin_trust_function_creators enabled"
 
   parameter {
