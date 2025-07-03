@@ -113,8 +113,9 @@ mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/s
 # Load Sakila data into Aurora
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
 
-
-#!/usr/bin/env bash
+############################################
+# STEP 4: Print out phpMyAdmin URLs 
+############################################
 
 # Retrieve URL for phpmyadmin-rds
 rds_url=$(aws apprunner list-services \
