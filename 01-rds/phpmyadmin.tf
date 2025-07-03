@@ -6,7 +6,6 @@ resource "aws_apprunner_service" "phpmyadmin" {
     image_repository {
       image_identifier      = "public.ecr.aws/docker/library/phpmyadmin:latest"
       image_repository_type = "ECR_PUBLIC" # Works for Docker Hub
-      auto_deployments_enabled = false 
 
       image_configuration {
         port = "80"
