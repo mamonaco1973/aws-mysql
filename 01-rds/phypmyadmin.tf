@@ -52,7 +52,7 @@ resource "aws_instance" "phpmyadmin-rds-instance" {
   # Places the instance in a private subnet without a public IP.
   # Inbound access is controlled by the associated security group.
   # ------------------------------------------------------------------------------
-  subnet_id                   = aws_subnet.rds-subnet-1
+  subnet_id                   = aws_subnet.rds-subnet-1.id
   vpc_security_group_ids      = [aws_security_group.http_sg.id]
   associate_public_ip_address = true
 
