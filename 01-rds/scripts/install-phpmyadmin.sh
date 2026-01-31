@@ -82,3 +82,30 @@ echo "Database endpoint : ${DB_ENDPOINT}"
 echo "Access URL        : http://<INSTANCE_IP>/phpmyadmin"
 echo "=================================================================="
 
+# --------------------------------------------------------------------------------
+# Load the sample database
+# --------------------------------------------------------------------------------
+
+cd /tmp
+wget -q https://downloads.mysql.com/docs/sakila-db.zip
+unzip sakila-db.zip
+
+USER=${DB_USER}
+PASSWORD=${DB_PASSWORD}
+ENDPOINT=${DB_ENDPOINT}
+
+# Log endpoint information.
+echo "NOTE: Primary RDS Endpoint: $ENDPOINT"
+echo "NOTE: Loading 'sakila' data into RDS"
+
+# Create the Sakila database if it does not already exist.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
+  -e "CREATE DATABASE IF NOT EXISTS sakila;"
+
+# Load Sakila schema.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-schema.sql
+
+# Load Sakila data.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-data.sql
