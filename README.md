@@ -27,7 +27,7 @@ As part of this project:
   - Uses security groups to restrict access
   - Authenticates using credentials stored in AWS Secrets Manager
 
-The **Sakila** sample database is loaded into both engines to provide a
+The [Sakila sample database](https://dev.mysql.com/doc/sakila/en/) is loaded into both engines to provide a
 consistent dataset for testing and comparison.
 
 ![diagram](aws-mysql.png)
