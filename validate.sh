@@ -187,3 +187,21 @@ echo "==========================================================================
 echo "phpMyAdmin URL for RDS Instance:"
 echo "http://${PUBLIC_DNS}/phpmyadmin/"
 echo "=========================================================================="
+
+INSTANCE_NAME="phpmyadmin-aurora"
+
+PUBLIC_DNS=$(aws ec2 describe-instances \
+  --region "${AWS_REGION}" \
+  --filters "Name=tag:Name,Values=${INSTANCE_NAME}" \
+  --query 'Reservations[0].Instances[0].PublicDnsName' \
+  --output text)
+
+if [[ -z "${PUBLIC_DNS}" || "${PUBLIC_DNS}" == "None" ]]; then
+  echo "ERROR: Instance has no public DNS name"
+  exit 1
+fi
+
+echo "=========================================================================="
+echo "phpMyAdmin URL for Aurora Instance:"
+echo "http://${PUBLIC_DNS}/phpmyadmin/"
+echo "=========================================================================="
