@@ -39,7 +39,8 @@ resource "aws_secretsmanager_secret" "aurora_credentials" {
   # SECRET IDENTITY
   # ----------------------------------------------------------------------------
   # Logical name for the secret in AWS Secrets Manager.
-  name = "aurora-credentials"
+  name        = "aurora-credentials"
+  description = "root credentials for example Aurora MySQL Instance"
 
   # ----------------------------------------------------------------------------
   # DELETION BEHAVIOR
@@ -83,8 +84,8 @@ resource "aws_secretsmanager_secret" "mysql_credentials" {
   # SECRET IDENTITY
   # ----------------------------------------------------------------------------
   # Logical name for the secret in AWS Secrets Manager.
-  name = "mysql-credentials"
-
+  name        = "mysql-credentials"
+  description = "root credentials for example RDS MySQL Instance"
   # ----------------------------------------------------------------------------
   # DELETION BEHAVIOR
   # ----------------------------------------------------------------------------

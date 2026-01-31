@@ -166,7 +166,6 @@ AWS_REGION="us-east-2"
 # echo "NOTE: phpMyAdmin Aurora URL:  https://$aurora_url"
 
 
-#!/usr/bin/env bash
 set -euo pipefail
 
 REGION="us-east-2"
