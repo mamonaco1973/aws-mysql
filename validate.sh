@@ -168,40 +168,56 @@ AWS_REGION="us-east-2"
 
 set -euo pipefail
 
-INSTANCE_NAME="phpmyadmin-rds"
+# ------------------------------------------------------------------------------
+# CONFIG
+# ------------------------------------------------------------------------------
 
-echo $AWS_REGION
+AWS_REGION="us-east-2"
 
-PUBLIC_DNS=$(aws ec2 describe-instances \
-  --region "${AWS_REGION}" \
-  --filters "Name=tag:Name,Values=${INSTANCE_NAME}" \
-  --query 'Reservations[0].Instances[0].PublicDnsName' \
-  --output text)
+# ------------------------------------------------------------------------------
+# RESOLVE phpMyAdmin ENDPOINTS
+# ------------------------------------------------------------------------------
 
-if [[ -z "${PUBLIC_DNS}" || "${PUBLIC_DNS}" == "None" ]]; then
-  echo "ERROR: Instance has no public DNS name"
+RDS_INSTANCE_NAME="phpmyadmin-rds"
+AURORA_INSTANCE_NAME="phpmyadmin-aurora"
+
+get_public_dns() {
+  local instance_name="$1"
+
+  aws ec2 describe-instances \
+    --region "${AWS_REGION}" \
+    --filters \
+      "Name=tag:Name,Values=${instance_name}" \
+      "Name=instance-state-name,Values=running" \
+    --query 'Reservations[0].Instances[0].PublicDnsName' \
+    --output text
+}
+
+RDS_PUBLIC_DNS=$(get_public_dns "${RDS_INSTANCE_NAME}")
+AURORA_PUBLIC_DNS=$(get_public_dns "${AURORA_INSTANCE_NAME}")
+
+if [[ -z "${RDS_PUBLIC_DNS}" || "${RDS_PUBLIC_DNS}" == "None" ]]; then
+  echo "ERROR: ${RDS_INSTANCE_NAME} has no public DNS name"
   exit 1
 fi
 
-echo "=========================================================================="
-echo "phpMyAdmin URL for RDS Instance:"
-echo "http://${PUBLIC_DNS}/phpmyadmin/"
-echo "=========================================================================="
-
-INSTANCE_NAME="phpmyadmin-aurora"
-
-PUBLIC_DNS=$(aws ec2 describe-instances \
-  --region "${AWS_REGION}" \
-  --filters "Name=tag:Name,Values=${INSTANCE_NAME}" \
-  --query 'Reservations[0].Instances[0].PublicDnsName' \
-  --output text)
-
-if [[ -z "${PUBLIC_DNS}" || "${PUBLIC_DNS}" == "None" ]]; then
-  echo "ERROR: Instance has no public DNS name"
+if [[ -z "${AURORA_PUBLIC_DNS}" || "${AURORA_PUBLIC_DNS}" == "None" ]]; then
+  echo "ERROR: ${AURORA_INSTANCE_NAME} has no public DNS name"
   exit 1
 fi
 
+# ------------------------------------------------------------------------------
+# DISPLAY RESULTS
+# ------------------------------------------------------------------------------
+
 echo "=========================================================================="
-echo "phpMyAdmin URL for Aurora Instance:"
-echo "http://${PUBLIC_DNS}/phpmyadmin/"
+echo " phpMyAdmin Endpoints"
+echo "=========================================================================="
+echo
+echo " RDS phpMyAdmin URL:"
+echo "   http://${RDS_PUBLIC_DNS}/phpmyadmin/"
+echo
+echo " Aurora phpMyAdmin URL:"
+echo "   http://${AURORA_PUBLIC_DNS}/phpmyadmin/"
+echo
 echo "=========================================================================="
