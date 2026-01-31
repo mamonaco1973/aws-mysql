@@ -83,22 +83,12 @@ resource "aws_instance" "phpmyadmin-rds-instance" {
   })
 
   # ------------------------------------------------------------------------------
-  # Encrypt the disk.
-  # ------------------------------------------------------------------------------
-
-  root_block_device {
-    encrypted   = true
-    kms_key_id  = aws_kms_key.caribou.arn
-    volume_type = "gp3"
-  }
-
-  # ------------------------------------------------------------------------------
   # TAGS
   # ------------------------------------------------------------------------------
   # Identifies the instance for operational visibility and cost tracking.
   # ------------------------------------------------------------------------------
   tags = {
-    Name = "phpmyadmin-aurora"
+    Name = "phpmyadmin-rds"
   }
 }
 
