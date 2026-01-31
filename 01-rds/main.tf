@@ -1,17 +1,27 @@
-# Configure the AWS provider block
-# This section establishes the configuration for the AWS provider, which is essential for Terraform to communicate with AWS services.
-# The provider is responsible for managing and provisioning AWS resources defined in your Terraform code.
-# 
-# 'region' specifies the AWS region where Terraform will create and manage resources.
-# It is critical to set this value correctly, as deploying resources in an incorrect region can lead to higher latency, unexpected costs, or compliance issues.
-# 
-# Note:
-# - Ensure the AWS credentials (e.g., access keys) are properly configured in your environment.
-# - Use the AWS CLI, environment variables, or Terraform's native authentication methods for secure credential management.
-# - Replace "us-east-2" with the desired region code (e.g., "us-west-1") if deploying to a different AWS region.
-
+# ==============================================================================
+# AWS PROVIDER CONFIGURATION
+# ==============================================================================
+# Configures the AWS provider used by Terraform to authenticate with AWS and
+# manage cloud resources.
+#
+# Notes:
+# - The provider must be configured before any AWS resources can be created.
+# - Credentials are resolved via the standard AWS provider chain:
+#     * Environment variables
+#     * Shared credentials file
+#     * AWS CLI configuration
+#     * Instance / task role (when running in AWS)
+# - Always verify the target region to avoid deploying resources into the
+#   wrong account or geography.
+# ==============================================================================
 provider "aws" {
-  region = "us-east-2" # Default region set to US East (Ohio). Modify if your deployment requires another region.
+  # ----------------------------------------------------------------------------
+  # REGION SELECTION
+  # ----------------------------------------------------------------------------
+  # AWS region where all resources in this configuration will be created.
+  # Example regions:
+  # - us-east-1 (N. Virginia)
+  # - us-east-2 (Ohio)
+  # - us-west-2 (Oregon)
+  region = "us-east-2"
 }
-
-

@@ -1,144 +1,161 @@
 #!/bin/bash
+# ==============================================================================
+# FILE: validate.sh
+# ==============================================================================
+# ORCHESTRATION SCRIPT: SAKILA SAMPLE DATA LOAD AND VALIDATION
+# ==============================================================================
+# Downloads the MySQL Sakila sample database and loads it into:
+#   - A standalone MySQL RDS instance
+#   - An Aurora MySQL cluster
+#
+# High-level flow:
+#   1) Download and unpack the Sakila sample dataset.
+#   2) Load schema and data into MySQL RDS using Secrets Manager credentials.
+#   3) Load schema and data into Aurora MySQL (Aurora-compatible adjustments).
+#   4) Resolve and print phpMyAdmin App Runner service URLs.
+#
+# Notes:
+# - Credentials and endpoints are retrieved from AWS Secrets Manager.
+# - Endpoints are expected to be stored as hostnames (no port).
+# - Requires: aws CLI, jq, mysql client, wget, unzip.
+# ==============================================================================
 
-############################################
-# SETUP: Configure AWS Region
-############################################
-
-# AWS region where Secrets Manager and RDS/Aurora are deployed
+# ==============================================================================
+# SETUP: AWS REGION
+# ==============================================================================
+# AWS region where Secrets Manager, RDS, Aurora, and App Runner are deployed.
+# ==============================================================================
 AWS_REGION="us-east-2"
 
-############################################
-# STEP 1: Download Sakila Sample Database
-############################################
-
+# ==============================================================================
+# STEP 1: DOWNLOAD SAKILA SAMPLE DATABASE
+# ==============================================================================
 echo "NOTE: Downloading sakila sample data."
 
-# Change directory into the Terraform RDS project folder
+# Move into the Terraform RDS project directory.
 cd 01-rds
 
-# Change into the 'data' subfolder where we'll store sample data
+# Move into the data directory used for sample assets.
 cd data
 
-# Remove any existing Sakila data directory to avoid conflicts
-rm -f -r sakila-db
+# Remove any existing Sakila directory to avoid conflicts.
+rm -rf sakila-db
 
-# Remove any existing Sakila zip files to ensure a clean download
-rm -f -r sakila*.zip*
+# Remove any previously downloaded Sakila archives.
+rm -rf sakila*.zip*
 
-# Download Sakila sample database zip file silently (-q)
+# Download the Sakila sample database archive.
 wget -q https://downloads.mysql.com/docs/sakila-db.zip
 
-# Unzip the downloaded archive into the current directory
+# Unpack the archive into the current directory.
 unzip sakila-db.zip
 
-# Return to the project root directory
+# Return to the project root directory.
 cd ..
 cd ..
 
-############################################
-# STEP 2: Load Sakila Data into MySQL RDS
-############################################
-
-# NOTE: You could uncomment this to show Aurora endpoint in logs
-# echo "NOTE: Primary Aurora Endpoint: $PRIMARY_ENDPOINT"
-
-# Name of the secret in AWS Secrets Manager that holds RDS credentials
+# ==============================================================================
+# STEP 2: LOAD SAKILA DATA INTO MYSQL RDS
+# ==============================================================================
+# Retrieve MySQL RDS credentials and endpoint from Secrets Manager.
+# ==============================================================================
 SECRET_NAME="mysql-credentials"
 
-# Retrieve secret JSON string (user/password/endpoint) from Secrets Manager
+# Fetch the secret payload (JSON).
 SECRET_JSON=$(aws secretsmanager get-secret-value \
-   --region "$AWS_REGION" \
-   --secret-id "$SECRET_NAME" \
-   --query 'SecretString' \
-   --output text)
+  --region "$AWS_REGION" \
+  --secret-id "$SECRET_NAME" \
+  --query 'SecretString' \
+  --output text)
 
-# Extract 'user' field using jq JSON parser
+# Extract connection details.
 USER=$(echo "$SECRET_JSON" | jq -r .user)
-
-# Extract 'password' field
 PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
-
-# Extract 'endpoint' field (RDS endpoint)
 ENDPOINT=$(echo "$SECRET_JSON" | jq -r .endpoint)
 
-# Print endpoint info for verification
+# Log endpoint information.
 echo "NOTE: Primary RDS Endpoint: $ENDPOINT"
 echo "NOTE: Loading 'sakila' data into RDS"
 
-# Create 'sakila' database if it doesn't exist
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" -e "CREATE DATABASE IF NOT EXISTS sakila;"
+# Create the Sakila database if it does not already exist.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
+  -e "CREATE DATABASE IF NOT EXISTS sakila;"
 
-# Load Sakila schema SQL into the database
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-schema.sql
+# Load Sakila schema.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-schema.sql
 
-# Load Sakila data SQL into the database
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
+# Load Sakila data.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-data.sql
 
-############################################
-# STEP 3: Load Sakila Data into Aurora MySQL
-############################################
-
-# Update secret name to reference Aurora credentials
+# ==============================================================================
+# STEP 3: LOAD SAKILA DATA INTO AURORA MYSQL
+# ==============================================================================
+# Retrieve Aurora credentials and endpoint from Secrets Manager.
+# ==============================================================================
 SECRET_NAME="aurora-credentials"
 
-# Retrieve secret JSON for Aurora credentials and endpoint
+# Fetch the secret payload (JSON).
 SECRET_JSON=$(aws secretsmanager get-secret-value \
-   --region "$AWS_REGION" \
-   --secret-id "$SECRET_NAME" \
-   --query 'SecretString' \
-   --output text)
+  --region "$AWS_REGION" \
+  --secret-id "$SECRET_NAME" \
+  --query 'SecretString' \
+  --output text)
 
-# Extract Aurora username
+# Extract connection details.
 USER=$(echo "$SECRET_JSON" | jq -r .user)
-
-# Extract Aurora password
 PASSWORD=$(echo "$SECRET_JSON" | jq -r .password)
-
-# Extract Aurora endpoint
 ENDPOINT=$(echo "$SECRET_JSON" | jq -r .endpoint)
 
-# Print Aurora endpoint info
+# Log endpoint information.
 echo "NOTE: Loading 'sakila' data into Aurora"
 echo "NOTE: Primary Aurora Endpoint: $ENDPOINT"
 
-# Create 'sakila' database in Aurora
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" -e "CREATE DATABASE IF NOT EXISTS sakila;"
+# Create the Sakila database if it does not already exist.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
+  -e "CREATE DATABASE IF NOT EXISTS sakila;"
 
-# COMMENT OUT 'default_storage_engine' line in schema (Aurora compatibility)
-sed -i 's/^\(.*default_storage_engine.*\)/-- \1/' ./01-rds/data/sakila-db/sakila-schema.sql
+# Comment out default_storage_engine for Aurora compatibility.
+sed -i 's/^\(.*default_storage_engine.*\)/-- \1/' \
+  ./01-rds/data/sakila-db/sakila-schema.sql
 
-# Load Sakila schema into Aurora
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-schema.sql
+# Load Sakila schema into Aurora.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-schema.sql
 
-# Load Sakila data into Aurora
-mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila < ./01-rds/data/sakila-db/sakila-data.sql
+# Load Sakila data into Aurora.
+mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
+  < ./01-rds/data/sakila-db/sakila-data.sql
 
-############################################
-# STEP 4: Print out phpMyAdmin URLs 
-############################################
+# ==============================================================================
+# STEP 4: PRINT PHPMYADMIN SERVICE URLS
+# ==============================================================================
+# Resolve App Runner service URLs for phpMyAdmin frontends.
+# ==============================================================================
 
-# Retrieve URL for phpmyadmin-rds
+# Retrieve phpMyAdmin URL for MySQL RDS.
 rds_url=$(aws apprunner list-services \
-  --region us-east-2 \
+  --region "$AWS_REGION" \
   --query "ServiceSummaryList[?ServiceName=='phpmyadmin-rds'].ServiceArn" \
   --output text | \
   xargs -I {} aws apprunner describe-service \
-    --region us-east-2 \
+    --region "$AWS_REGION" \
     --service-arn {} \
     --query "Service.ServiceUrl" \
     --output text)
 
-# Retrieve URL for phpmyadmin-aurora
+# Retrieve phpMyAdmin URL for Aurora.
 aurora_url=$(aws apprunner list-services \
-  --region us-east-2 \
+  --region "$AWS_REGION" \
   --query "ServiceSummaryList[?ServiceName=='phpmyadmin-aurora'].ServiceArn" \
   --output text | \
   xargs -I {} aws apprunner describe-service \
-    --region us-east-2 \
+    --region "$AWS_REGION" \
     --service-arn {} \
     --query "Service.ServiceUrl" \
     --output text)
 
-# Output the results
+# Output resolved URLs.
 echo "NOTE: phpMyAdmin RDS URL:     https://$rds_url"
 echo "NOTE: phpMyAdmin Aurora URL:  https://$aurora_url"

@@ -1,134 +1,216 @@
-##############################################
-# Standalone MySQL RDS Instance Configuration
-##############################################
+# ==============================================================================
+# STANDALONE MYSQL RDS INSTANCE
+# ==============================================================================
+# Provisions a standalone Amazon RDS MySQL instance intended for small
+# test or development workloads.
+#
+# Notes:
+# - Uses a burstable instance class for cost efficiency.
+# - Multi-AZ is enabled for automatic failover.
+# - This is NOT Aurora; storage and scaling characteristics differ.
+# ==============================================================================
 resource "aws_db_instance" "mysql_rds" {
-  # Unique identifier for the RDS instance
+  # ----------------------------------------------------------------------------
+  # CORE IDENTIFIERS
+  # ----------------------------------------------------------------------------
+  # Logical identifier for the RDS instance.
   identifier = "mysql-rds-instance"
 
-  # Specify the RDS engine - MySQL
+  # ----------------------------------------------------------------------------
+  # ENGINE / INSTANCE SHAPE
+  # ----------------------------------------------------------------------------
+  # MySQL engine family.
   engine = "mysql"
 
-  # Specific MySQL 8 version
-  engine_version = "8.0.34"
-
-  # Instance size (smallest burstable for test/dev workloads)
+  # Small, burstable instance class suitable for dev/test.
   instance_class = "db.t4g.micro"
 
-  # Storage size in GB (minimum 20GB for MySQL)
+  # ----------------------------------------------------------------------------
+  # STORAGE
+  # ----------------------------------------------------------------------------
+  # Allocated storage in GB (20 GB is the MySQL minimum).
   allocated_storage = 20
 
-  # Use gp3 - modern general-purpose SSD storage
+  # General Purpose SSD (gp3).
   storage_type = "gp3"
 
-  # Initial database created upon instance creation
+  # ----------------------------------------------------------------------------
+  # DATABASE BOOTSTRAP
+  # ----------------------------------------------------------------------------
+  # Initial database created at instance launch.
   db_name = "mydb"
 
-  # Master username for connecting to the DB
+  # ----------------------------------------------------------------------------
+  # MASTER CREDENTIALS
+  # ----------------------------------------------------------------------------
+  # Master username for database access.
   username = "admin"
 
-  # Password generated securely (reference to random_password resource)
+  # Master password sourced from a random_password resource.
   password = random_password.mysql_password.result
 
-  # Subnet group defining which subnets in the VPC RDS will use
+  # ----------------------------------------------------------------------------
+  # NETWORKING / ACCESS CONTROL
+  # ----------------------------------------------------------------------------
+  # Subnet group defining which VPC subnets RDS can use.
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
 
-  # Security groups applied to the RDS instance for inbound/outbound rules
+  # Security groups controlling inbound and outbound access.
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
-  # Enable Multi-AZ deployment for automatic failover
-  multi_az = true
-
-  # Expose this instance to the public internet
+  # Expose the instance endpoint publicly.
   publicly_accessible = true
 
-  # Do not create a final snapshot when deleting this instance
+  # ----------------------------------------------------------------------------
+  # HIGH AVAILABILITY
+  # ----------------------------------------------------------------------------
+  # Enable Multi-AZ for automatic failover.
+  multi_az = true
+
+  # ----------------------------------------------------------------------------
+  # BACKUPS / LIFECYCLE
+  # ----------------------------------------------------------------------------
+  # Skip final snapshot on destroy (not recommended for prod).
   skip_final_snapshot = true
 
-  # Number of days automated backups are retained
+  # Retain automated backups for N days.
   backup_retention_period = 5
 
-  # Daily backup window during which backups occur
+  # Daily backup window (UTC).
   backup_window = "07:00-09:00"
 
-  # Disable Performance Insights (database performance monitoring)
+  # ----------------------------------------------------------------------------
+  # OBSERVABILITY
+  # ----------------------------------------------------------------------------
+  # Disable Performance Insights.
   performance_insights_enabled = false
 
-  # Tags applied to the RDS instance (helps with identification)
+  # ----------------------------------------------------------------------------
+  # PARAMETER GROUP
+  # ----------------------------------------------------------------------------
+  # Custom MySQL parameter group.
+  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
+
+  # ----------------------------------------------------------------------------
+  # TAGGING
+  # ----------------------------------------------------------------------------
+  # Resource tags.
   tags = {
     Name = "MySQL RDS Instance"
   }
-  # Custom parameter group for MySQL settings
-  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
 }
 
-##################################################################
-# RDS MySQL Read Replica Configuration
-##################################################################
+# ==============================================================================
+# MYSQL RDS READ REPLICA
+# ==============================================================================
+# Provisions a read-only replica of the primary MySQL RDS instance.
+#
+# Notes:
+# - Replicas are used for read scaling and reporting workloads.
+# - Engine and version are inherited from the source instance.
+# ==============================================================================
 resource "aws_db_instance" "mysql_rds_replica" {
-  # Unique identifier for the read replica
+  # ----------------------------------------------------------------------------
+  # CORE IDENTIFIERS
+  # ----------------------------------------------------------------------------
+  # Logical identifier for the read replica.
   identifier = "mysql-rds-replica"
 
-  # Specify the source database to replicate from (the primary instance ARN)
+  # ----------------------------------------------------------------------------
+  # REPLICATION SOURCE
+  # ----------------------------------------------------------------------------
+  # Source database ARN for replication.
   replicate_source_db = aws_db_instance.mysql_rds.arn
 
-  # Engine must match the primary (inherited from source)
-  engine = aws_db_instance.mysql_rds.engine
-
-  # Engine version must match the primary
+  # ----------------------------------------------------------------------------
+  # ENGINE / INSTANCE SHAPE
+  # ----------------------------------------------------------------------------
+  # Match the primary engine and version.
+  engine         = aws_db_instance.mysql_rds.engine
   engine_version = aws_db_instance.mysql_rds.engine_version
 
-  # Instance size for the replica (same size here as primary)
+  # Instance class for the replica.
   instance_class = "db.t4g.micro"
 
-  # Subnet group for networking configuration
+  # ----------------------------------------------------------------------------
+  # NETWORKING
+  # ----------------------------------------------------------------------------
+  # Subnet group for the replica.
   db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
 
-  # Security group(s) to control access to the replica
+  # Security groups controlling access.
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
-  # Make replica publicly accessible
+  # Expose the replica endpoint publicly.
   publicly_accessible = true
 
-  # Disable Performance Insights
+  # ----------------------------------------------------------------------------
+  # OBSERVABILITY / LIFECYCLE
+  # ----------------------------------------------------------------------------
+  # Disable Performance Insights.
   performance_insights_enabled = false
 
-  # Do not create a final snapshot on deletion
+  # Skip final snapshot on destroy.
   skip_final_snapshot = true
 
-  # Tag for identification
+  # ----------------------------------------------------------------------------
+  # PARAMETER GROUP
+  # ----------------------------------------------------------------------------
+  # Custom MySQL parameter group.
+  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
+
+  # ----------------------------------------------------------------------------
+  # TAGGING
+  # ----------------------------------------------------------------------------
+  # Resource tags.
   tags = {
     Name = "MySQL RDS Read Replica"
   }
-  # Custom parameter group for MySQL settings
-  parameter_group_name = aws_db_parameter_group.mysql_custom_params.name
 }
 
-##########################################################
-# RDS Subnet Group
-# Defines which subnets the RDS instances will use
-# Typically you need at least 2 subnets in different AZs
-##########################################################
+# ==============================================================================
+# RDS SUBNET GROUP
+# ==============================================================================
+# Defines which subnets RDS instances may use.
+#
+# Requirements:
+# - Should include at least two subnets in different AZs.
+# ==============================================================================
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  # Name of the subnet group
+  # Name of the subnet group.
   name = "rds-subnet-group"
 
-  # List of subnet IDs included in this group
+  # Subnets included in this group.
   subnet_ids = [
     aws_subnet.rds-subnet-1.id,
     aws_subnet.rds-subnet-2.id
   ]
 
-  # Tag for identification
+  # Resource tags.
   tags = {
     Name = "RDS Subnet Group"
   }
 }
 
+# ==============================================================================
+# MYSQL PARAMETER GROUP
+# ==============================================================================
+# Custom MySQL parameter group for database-level configuration.
+# ==============================================================================
 resource "aws_db_parameter_group" "mysql_custom_params" {
-  name        = "mysql-custom-params"
-  family      = "mysql8.0" # Must match your MySQL major version
-  description = "Custom parameter group with log_bin_trust_function_creators enabled"
+  # Name of the parameter group.
+  name = "mysql-custom-params"
 
+  # Parameter group family (must match MySQL major version).
+  family = "mysql8.0"
+
+  # Description of the parameter group.
+  description = "Custom MySQL parameters"
+
+  # ----------------------------------------------------------------------------
+  # PARAMETERS
+  # ----------------------------------------------------------------------------
+  # Allow creation of stored functions without SUPER privilege.
   parameter {
     name  = "log_bin_trust_function_creators"
     value = "1"

@@ -1,51 +1,108 @@
-##################################################
-# SECURELY GENERATE AND STORE CREDENTIALS FOR RDS
-##################################################
+# ==============================================================================
+# SECRETS: GENERATE AND STORE RDS CREDENTIALS
+# ==============================================================================
+# Generates random passwords and stores database connection information in
+# AWS Secrets Manager for:
+# - Aurora cluster credentials
+# - Standalone MySQL RDS instance credentials
+#
+# Secret payload shape (JSON):
+# {
+#   "user":     "admin",
+#   "password": "<generated>",
+#   "endpoint": "<hostname>"
+# }
+#
+# Notes:
+# - Passwords are alphanumeric only for broad client compatibility.
+# - Endpoints are stored as hostnames (port stripped) for convenience.
+# - `recovery_window_in_days = 0` forces immediate deletion on destroy.
+# ==============================================================================
 
-# Generate a secure random alphanumeric password
+# ==============================================================================
+# AURORA: PASSWORD GENERATION
+# ==============================================================================
 resource "random_password" "aurora_password" {
-  length  = 24    # Total password length: 24 characters
-  special = false # Exclude special characters (alphanumeric only for compatibility)
+  # ----------------------------------------------------------------------------
+  # PASSWORD POLICY
+  # ----------------------------------------------------------------------------
+  # Generate a 24-character alphanumeric password.
+  length  = 24
+  special = false
 }
 
-# Define a new Secrets Manager secret to store RDS credentials
+# ==============================================================================
+# AURORA: SECRETS MANAGER SECRET
+# ==============================================================================
 resource "aws_secretsmanager_secret" "aurora_credentials" {
-  name                    = "aurora-credentials" # Logical name for the secret in AWS Secrets Manager
+  # ----------------------------------------------------------------------------
+  # SECRET IDENTITY
+  # ----------------------------------------------------------------------------
+  # Logical name for the secret in AWS Secrets Manager.
+  name = "aurora-credentials"
+
+  # ----------------------------------------------------------------------------
+  # DELETION BEHAVIOR
+  # ----------------------------------------------------------------------------
+  # Force immediate deletion instead of a recovery window.
   recovery_window_in_days = 0
 }
 
-# Store the actual credential values in the secret (versioned)
+# ------------------------------------------------------------------------------
+# AURORA: SECRET VERSION (PAYLOAD)
+# ------------------------------------------------------------------------------
 resource "aws_secretsmanager_secret_version" "aurora_credentials_version" {
-  secret_id = aws_secretsmanager_secret.aurora_credentials.id # Reference the previously created secret
+  # Parent secret to which this version belongs.
+  secret_id = aws_secretsmanager_secret.aurora_credentials.id
 
-  # Encode credentials as a JSON string and store as the secret value
+  # Store connection details and generated password as a JSON document.
   secret_string = jsonencode({
-    user     = "admin"                                # Static username for the Packer user
-    password = random_password.aurora_password.result # Dynamic, securely generated password
+    user     = "admin"
+    password = random_password.aurora_password.result
     endpoint = split(":", aws_rds_cluster.aurora_cluster.endpoint)[0]
   })
 }
 
-# Generate a secure random alphanumeric password
+# ==============================================================================
+# MYSQL RDS: PASSWORD GENERATION
+# ==============================================================================
 resource "random_password" "mysql_password" {
-  length  = 24    # Total password length: 24 characters
-  special = false # Exclude special characters (alphanumeric only for compatibility)
+  # ----------------------------------------------------------------------------
+  # PASSWORD POLICY
+  # ----------------------------------------------------------------------------
+  # Generate a 24-character alphanumeric password.
+  length  = 24
+  special = false
 }
 
-# Define a new Secrets Manager secret to store RDS credentials
+# ==============================================================================
+# MYSQL RDS: SECRETS MANAGER SECRET
+# ==============================================================================
 resource "aws_secretsmanager_secret" "mysql_credentials" {
-  name                    = "mysql-credentials" # Logical name for the secret in AWS Secrets Manager
+  # ----------------------------------------------------------------------------
+  # SECRET IDENTITY
+  # ----------------------------------------------------------------------------
+  # Logical name for the secret in AWS Secrets Manager.
+  name = "mysql-credentials"
+
+  # ----------------------------------------------------------------------------
+  # DELETION BEHAVIOR
+  # ----------------------------------------------------------------------------
+  # Force immediate deletion instead of a recovery window.
   recovery_window_in_days = 0
 }
 
-# Store the actual credential values in the secret (versioned)
+# ------------------------------------------------------------------------------
+# MYSQL RDS: SECRET VERSION (PAYLOAD)
+# ------------------------------------------------------------------------------
 resource "aws_secretsmanager_secret_version" "mysql_credentials_version" {
-  secret_id = aws_secretsmanager_secret.mysql_credentials.id # Reference the previously created secret
+  # Parent secret to which this version belongs.
+  secret_id = aws_secretsmanager_secret.mysql_credentials.id
 
-  # Encode credentials as a JSON string and store as the secret value
+  # Store connection details and generated password as a JSON document.
   secret_string = jsonencode({
-    user     = "admin"                               # Static username for the Packer user
-    password = random_password.mysql_password.result # Dynamic, securely generated password
+    user     = "admin"
+    password = random_password.mysql_password.result
     endpoint = split(":", aws_db_instance.mysql_rds.endpoint)[0]
   })
 }

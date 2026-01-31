@@ -1,47 +1,67 @@
 #!/bin/bash
+# ==============================================================================
+# FILE: apply.sh
+# ==============================================================================
+# ORCHESTRATION SCRIPT: RDS DEPLOYMENT AND VALIDATION
+# ==============================================================================
+# Drives the end-to-end workflow for provisioning RDS infrastructure and
+# validating the resulting environment.
+#
+# High-level flow:
+#   1) Validate local environment prerequisites.
+#   2) Set the AWS default region for CLI and Terraform.
+#   3) Provision RDS infrastructure using Terraform.
+#   4) Run post-deployment validation and data load checks.
+#
+# Notes:
+# - This script is written to fail fast if any prerequisite step fails.
+# - Terraform is executed non-interactively using auto-approve.
+# ==============================================================================
 
-############################################
+# ==============================================================================
 # STEP 0: ENVIRONMENT VALIDATION
-############################################
-
-# Execute the environment check script to ensure all preconditions are met
+# ==============================================================================
+# Verify that all required tools, credentials, and environment variables
+# are present before proceeding.
+# ==============================================================================
 ./check_env.sh
 
-# If the script failed (non-zero exit code), abort the process immediately
+# Abort immediately if the environment validation fails.
 if [ $? -ne 0 ]; then
   echo "ERROR: Environment check failed. Exiting."
   exit 1
 fi
 
-############################################
+# ==============================================================================
 # STEP 1: SET AWS DEFAULT REGION
-############################################
-
-# Set the AWS region for all subsequent CLI commands
+# ==============================================================================
+# Export the AWS region used by Terraform and AWS CLI commands.
+# ==============================================================================
 export AWS_DEFAULT_REGION="us-east-2"
 
-############################################
-# STEP 2: TERRAFORM - BUILD NETWORKING INFRASTRUCTURE
-############################################
-
-# Inform user about infrastructure provisioning step
+# ==============================================================================
+# STEP 2: TERRAFORM - BUILD DATABASE INFRASTRUCTURE
+# ==============================================================================
+# Initialize and apply the Terraform configuration that provisions
+# RDS-related resources.
+# ==============================================================================
 echo "NOTE: Building Database Instances."
 
-# Navigate to the infrastructure provisioning folder
+# Change into the Terraform working directory.
 cd 01-rds
 
-# Initialize the Terraform backend and plugins
+# Initialize Terraform backend and providers.
 terraform init
 
-# Apply the Terraform configuration non-interactively (auto-approve skips manual confirmation)
+# Apply Terraform configuration non-interactively.
 terraform apply -auto-approve
 
-# Return to the root directory
+# Return to the project root directory.
 cd ..
 
-############################################
-# STEP 3: VALIDATE AND LOAD PAGILA DATA
-############################################
-
+# ==============================================================================
+# STEP 3: POST-DEPLOYMENT VALIDATION
+# ==============================================================================
+# Validate the deployed infrastructure and load any required sample data.
+# ==============================================================================
 ./validate.sh
-

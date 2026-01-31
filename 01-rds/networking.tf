@@ -1,87 +1,157 @@
-############################################
+# ==============================================================================
 # VPC CONFIGURATION FOR RDS INFRASTRUCTURE
-############################################
+# ==============================================================================
+# Builds a minimal VPC footprint to support RDS networking.
+#
+# High-level flow:
+# - Create a VPC with DNS support enabled.
+# - Attach an Internet Gateway (IGW) for outbound internet routing.
+# - Create a public route table with a default route to the IGW.
+# - Create two public subnets in separate AZs.
+# - Associate both subnets to the public route table.
+#
+# Notes:
+# - This configuration creates PUBLIC subnets (map_public_ip_on_launch = true).
+# - Public subnets are not recommended for production RDS in most cases.
+# ==============================================================================
 
-# Define the main Virtual Private Cloud (VPC)
+# ==============================================================================
+# VPC
+# ==============================================================================
 resource "aws_vpc" "rds-vpc" {
-  cidr_block           = "10.0.0.0/24" # Assign a /24 CIDR block (256 IPs total) for internal networking
-  enable_dns_support   = true          # Enable internal DNS resolution for EC2 instances
-  enable_dns_hostnames = true          # Allow EC2 instances to be assigned DNS hostnames
+  # ----------------------------------------------------------------------------
+  # ADDRESSING
+  # ----------------------------------------------------------------------------
+  # VPC CIDR block (/24 provides 256 total IPv4 addresses).
+  cidr_block = "10.0.0.0/24"
+
+  # ----------------------------------------------------------------------------
+  # DNS
+  # ----------------------------------------------------------------------------
+  # Enable DNS resolution and DNS hostnames within the VPC.
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  # ----------------------------------------------------------------------------
+  # TAGGING
+  # ----------------------------------------------------------------------------
   tags = {
-    Name          = "rds-vpc"    # Name tag for resource identification
-    ResourceGroup = "rds-asg-rg" # Logical resource group identifier (non-AWS grouping)
+    Name          = "rds-vpc"
+    ResourceGroup = "rds-asg-rg"
   }
 }
 
-############################################
-# INTERNET GATEWAY FOR OUTBOUND ACCESS
-############################################
-
-# Create an Internet Gateway for the VPC
+# ==============================================================================
+# INTERNET GATEWAY
+# ==============================================================================
+# Provides a target for internet-routable traffic from public subnets.
+# ==============================================================================
 resource "aws_internet_gateway" "rds-igw" {
-  vpc_id = aws_vpc.rds-vpc.id # Attach IGW to the main VPC
+  # Attach the IGW to the VPC.
+  vpc_id = aws_vpc.rds-vpc.id
+
+  # Resource tags.
   tags = {
-    Name = "rds-igw" # Name tag for resource identification
+    Name = "rds-igw"
   }
 }
 
-############################################
-# PUBLIC ROUTE TABLE FOR INTERNET ACCESS
-############################################
-
-# Create a new route table for public subnets
+# ==============================================================================
+# PUBLIC ROUTE TABLE
+# ==============================================================================
+# Defines internet routing for subnets that should be considered "public".
+# ==============================================================================
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.rds-vpc.id # Associate route table with the main VPC
+  # Associate this route table with the VPC.
+  vpc_id = aws_vpc.rds-vpc.id
+
+  # Resource tags.
   tags = {
-    Name = "public-route-table" # Name tag for route table
+    Name = "public-route-table"
   }
 }
 
-# Create a default route to forward all internet-bound traffic to the IGW
+# ------------------------------------------------------------------------------
+# DEFAULT INTERNET ROUTE
+# ------------------------------------------------------------------------------
+# Routes all IPv4 egress traffic (0.0.0.0/0) to the Internet Gateway.
+# ------------------------------------------------------------------------------
 resource "aws_route" "default_route" {
-  route_table_id         = aws_route_table.public.id       # Bind route to the public route table
-  destination_cidr_block = "0.0.0.0/0"                     # Catch-all route for all IPv4 traffic
-  gateway_id             = aws_internet_gateway.rds-igw.id # Route traffic to the Internet Gateway
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.rds-igw.id
 }
 
-############################################
-# PUBLIC SUBNET DEFINITIONS
-############################################
-
-# Define the first public subnet (AZ: us-east-2a)
+# ==============================================================================
+# PUBLIC SUBNETS
+# ==============================================================================
+# Two public subnets are created in separate AZs for HA-compatible layouts.
+# ==============================================================================
 resource "aws_subnet" "rds-subnet-1" {
-  vpc_id                  = aws_vpc.rds-vpc.id # Associate subnet with the main VPC
-  cidr_block              = "10.0.0.0/26"      # Allocate 64 IP addresses (10.0.0.0–10.0.0.63)
-  map_public_ip_on_launch = true               # Automatically assign public IPs to instances
-  availability_zone       = "us-east-2a"       # Place subnet in the first AZ
+  # ----------------------------------------------------------------------------
+  # NETWORKING
+  # ----------------------------------------------------------------------------
+  # Place subnet in the VPC and assign its CIDR range.
+  vpc_id     = aws_vpc.rds-vpc.id
+  cidr_block = "10.0.0.0/26"
+
+  # ----------------------------------------------------------------------------
+  # PUBLIC SUBNET BEHAVIOR
+  # ----------------------------------------------------------------------------
+  # Automatically assign public IPs on instance launch.
+  map_public_ip_on_launch = true
+
+  # ----------------------------------------------------------------------------
+  # AVAILABILITY ZONE
+  # ----------------------------------------------------------------------------
+  availability_zone = "us-east-2a"
+
+  # ----------------------------------------------------------------------------
+  # TAGGING
+  # ----------------------------------------------------------------------------
   tags = {
-    Name = "rds-subnet-1" # Name tag for subnet identification
+    Name = "rds-subnet-1"
   }
 }
 
-# Define the second public subnet (AZ: us-east-2b)
 resource "aws_subnet" "rds-subnet-2" {
-  vpc_id                  = aws_vpc.rds-vpc.id # Associate subnet with the main VPC
-  cidr_block              = "10.0.0.64/26"     # Allocate 64 IP addresses (10.0.0.64–10.0.0.127)
-  map_public_ip_on_launch = true               # Automatically assign public IPs to instances
-  availability_zone       = "us-east-2b"       # Place subnet in the second AZ
+  # ----------------------------------------------------------------------------
+  # NETWORKING
+  # ----------------------------------------------------------------------------
+  vpc_id     = aws_vpc.rds-vpc.id
+  cidr_block = "10.0.0.64/26"
+
+  # ----------------------------------------------------------------------------
+  # PUBLIC SUBNET BEHAVIOR
+  # ----------------------------------------------------------------------------
+  map_public_ip_on_launch = true
+
+  # ----------------------------------------------------------------------------
+  # AVAILABILITY ZONE
+  # ----------------------------------------------------------------------------
+  availability_zone = "us-east-2b"
+
+  # ----------------------------------------------------------------------------
+  # TAGGING
+  # ----------------------------------------------------------------------------
   tags = {
-    Name = "rds-subnet-2" # Name tag for subnet identification
+    Name = "rds-subnet-2"
   }
 }
 
-############################################
-# ROUTE TABLE ASSOCIATIONS WITH SUBNETS
-############################################
-
-# Associate the public route table with the first public subnet
+# ==============================================================================
+# ROUTE TABLE ASSOCIATIONS
+# ==============================================================================
+# Associates each public subnet with the public route table.
+# ==============================================================================
 resource "aws_route_table_association" "public_rta_1" {
-  subnet_id      = aws_subnet.rds-subnet-1.id # Target: rds-subnet-1
-  route_table_id = aws_route_table.public.id  # Use the public route table
+  # Bind subnet 1 to the public route table.
+  subnet_id      = aws_subnet.rds-subnet-1.id
+  route_table_id = aws_route_table.public.id
 }
 
-# Associate the public route table with the second public subnet
 resource "aws_route_table_association" "public_rta_2" {
-  subnet_id      = aws_subnet.rds-subnet-2.id # Target: rds-subnet-2
-  route_table_id = aws_route_table.public.id  # Use the public route table
+  # Bind subnet 2 to the public route table.
+  subnet_id      = aws_subnet.rds-subnet-2.id
+  route_table_id = aws_route_table.public.id
 }

@@ -1,91 +1,128 @@
-# -------------------------------------------------------
-# App Runner Service for phpMyAdmin connected to MySQL RDS
-# -------------------------------------------------------
+# ==============================================================================
+# APP RUNNER: PHPMYADMIN FRONTEND SERVICES
+# ==============================================================================
+# Provisions AWS App Runner services to run phpMyAdmin against:
+# - A standalone MySQL RDS instance
+# - An Aurora MySQL cluster
+#
+# Notes:
+# - This deploys the official phpMyAdmin container from ECR Public.
+# - App Runner is internet-facing by default; control access accordingly.
+# - `PMA_HOST` is set to the database endpoint hostname (port stripped).
+# - These services do not configure database credentials; phpMyAdmin will
+#   prompt for username/password at login.
+# ==============================================================================
+
+# ==============================================================================
+# APP RUNNER SERVICE: PHPMYADMIN -> MYSQL RDS
+# ==============================================================================
 resource "aws_apprunner_service" "phpmyadmin_rds" {
-  # Define the friendly name of the App Runner service
+  # ----------------------------------------------------------------------------
+  # SERVICE IDENTITY
+  # ----------------------------------------------------------------------------
+  # Friendly name for the App Runner service.
   service_name = "phpmyadmin-rds"
 
-  # Define how the service pulls and deploys the image
+  # ----------------------------------------------------------------------------
+  # SOURCE CONFIGURATION (CONTAINER IMAGE)
+  # ----------------------------------------------------------------------------
   source_configuration {
-
-    # Disable auto-deployments when the image updates (you control deploys)
+    # Disable automatic deployments when the image tag changes.
     auto_deployments_enabled = false
 
     image_repository {
-      # Reference the official phpMyAdmin image from public ECR
+      # Official phpMyAdmin image hosted in ECR Public.
       image_identifier      = "public.ecr.aws/docker/library/phpmyadmin:latest"
       image_repository_type = "ECR_PUBLIC"
 
       image_configuration {
-        # The container exposes HTTP on port 80
+        # Container listens on HTTP port 80.
         port = "80"
 
-        # Provide environment variables to phpMyAdmin
+        # Runtime environment variables passed into the container.
         runtime_environment_variables = {
-          # Extract just the hostname portion of the RDS endpoint (before colon)
+          # phpMyAdmin target DB hostname (strip ":port" from endpoint).
           PMA_HOST = split(":", aws_db_instance.mysql_rds.endpoint)[0]
         }
       }
     }
   }
 
-  # Specify the compute resources for the App Runner service
+  # ----------------------------------------------------------------------------
+  # INSTANCE RESOURCES
+  # ----------------------------------------------------------------------------
+  # CPU and memory allocated per running instance.
   instance_configuration {
-    cpu    = "1024" # Allocate 1 vCPU
-    memory = "2048" # Allocate 2GB of RAM
+    cpu    = "1024"
+    memory = "2048"
   }
 
-  # Configure the health check settings to monitor container health
+  # ----------------------------------------------------------------------------
+  # HEALTH CHECKS
+  # ----------------------------------------------------------------------------
+  # TCP checks validate that the container port is reachable.
   health_check_configuration {
-    protocol            = "TCP" # Use TCP health check (basic connectivity)
-    path                = "/"   # Path not strictly used for TCP
-    interval            = 10    # Check every 10 seconds
-    timeout             = 5     # Wait 5 seconds before marking unhealthy
-    healthy_threshold   = 1     # 1 successful check to become healthy
-    unhealthy_threshold = 5     # 5 failures to mark unhealthy
+    protocol            = "TCP"
+    path                = "/"
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 1
+    unhealthy_threshold = 5
   }
 }
 
-# -------------------------------------------------------
-# App Runner Service for phpMyAdmin connected to Aurora
-# -------------------------------------------------------
+# ==============================================================================
+# APP RUNNER SERVICE: PHPMYADMIN -> AURORA CLUSTER
+# ==============================================================================
 resource "aws_apprunner_service" "phpmyadmin_aurora" {
-  # Name of the service specifically for Aurora
+  # ----------------------------------------------------------------------------
+  # SERVICE IDENTITY
+  # ----------------------------------------------------------------------------
+  # Friendly name for the App Runner service.
   service_name = "phpmyadmin-aurora"
 
+  # ----------------------------------------------------------------------------
+  # SOURCE CONFIGURATION (CONTAINER IMAGE)
+  # ----------------------------------------------------------------------------
   source_configuration {
-
-    # Auto-deployment is off; you must manually redeploy
+    # Disable automatic deployments when the image tag changes.
     auto_deployments_enabled = false
 
     image_repository {
-      # Use the same official phpMyAdmin container image
+      # Official phpMyAdmin image hosted in ECR Public.
       image_identifier      = "public.ecr.aws/docker/library/phpmyadmin:latest"
       image_repository_type = "ECR_PUBLIC"
 
       image_configuration {
-        # The container listens on port 80
+        # Container listens on HTTP port 80.
         port = "80"
 
+        # Runtime environment variables passed into the container.
         runtime_environment_variables = {
-          # Extract the Aurora cluster hostname (strip port if present)
+          # phpMyAdmin target DB hostname (strip ":port" if present).
           PMA_HOST = split(":", aws_rds_cluster.aurora_cluster.endpoint)[0]
         }
       }
     }
   }
 
+  # ----------------------------------------------------------------------------
+  # INSTANCE RESOURCES
+  # ----------------------------------------------------------------------------
   instance_configuration {
-    cpu    = "1024" # 1 vCPU
-    memory = "2048" # 2GB RAM
+    cpu    = "1024"
+    memory = "2048"
   }
 
+  # ----------------------------------------------------------------------------
+  # HEALTH CHECKS
+  # ----------------------------------------------------------------------------
   health_check_configuration {
-    protocol            = "TCP" # Basic TCP connectivity check
-    path                = "/"   # Path placeholder (unused for TCP)
-    interval            = 10    # Perform check every 10 seconds
-    timeout             = 5     # 5-second wait before timeout
-    healthy_threshold   = 1     # Mark healthy after 1 pass
-    unhealthy_threshold = 5     # Mark unhealthy after 5 failures
+    protocol            = "TCP"
+    path                = "/"
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 1
+    unhealthy_threshold = 5
   }
 }

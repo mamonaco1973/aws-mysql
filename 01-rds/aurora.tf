@@ -1,121 +1,187 @@
-##############################################
-# Aurora MySQL RDS Cluster Configuration
-##############################################
+# ==============================================================================
+# AURORA MYSQL RDS CLUSTER
+# ==============================================================================
+# Provisions an Aurora MySQL cluster configured for Aurora Serverless v2.
+#
+# Notes:
+# - Aurora Serverless v2 requires `engine_mode = "provisioned"`.
+# - Capacity scaling is controlled via ACU min/max values.
+# - Instances (writer/reader) attach to this cluster via cluster_identifier.
+# ==============================================================================
 resource "aws_rds_cluster" "aurora_cluster" {
-  # Unique identifier for the Aurora cluster
+  # ----------------------------------------------------------------------------
+  # CORE IDENTIFIERS
+  # ----------------------------------------------------------------------------
+  # Logical identifier for the Aurora cluster.
   cluster_identifier = "aurora-mysql-cluster"
 
-  # Specify Aurora MySQL engine
+  # ----------------------------------------------------------------------------
+  # ENGINE / MODE
+  # ----------------------------------------------------------------------------
+  # Aurora MySQL engine family.
   engine = "aurora-mysql"
 
-  # Aurora MySQL engine version supporting Serverless v2
-  engine_version = "8.0.mysql_aurora.3.05.2"
-
-  # Use provisioned engine mode (Serverless v2 requires this)
+  # Serverless v2 requires "provisioned" engine mode.
   engine_mode = "provisioned"
 
-  # Name of the initial database created inside the cluster
+  # ----------------------------------------------------------------------------
+  # DATABASE BOOTSTRAP
+  # ----------------------------------------------------------------------------
+  # Initial database to create in the cluster.
   database_name = "mydb"
 
-  # Master credentials (admin user)
+  # ----------------------------------------------------------------------------
+  # MASTER CREDENTIALS
+  # ----------------------------------------------------------------------------
+  # Master user for the cluster.
   master_username = "admin"
+
+  # Master password sourced from a generated random_password resource.
   master_password = random_password.aurora_password.result
 
-  # Subnet group defining which VPC subnets Aurora can use
+  # ----------------------------------------------------------------------------
+  # NETWORKING / ACCESS CONTROL
+  # ----------------------------------------------------------------------------
+  # DB subnet group controls which VPC subnets Aurora can use.
   db_subnet_group_name = aws_db_subnet_group.aurora_subnet_group.name
 
-  # VPC security groups to control inbound/outbound access
+  # Security groups controlling inbound/outbound access to the cluster.
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
-  # Do not create a final snapshot when the cluster is destroyed
+  # ----------------------------------------------------------------------------
+  # BACKUPS / LIFECYCLE
+  # ----------------------------------------------------------------------------
+  # Skip final snapshot on destroy (convenient, but not recommended for prod).
   skip_final_snapshot = true
 
-  # Number of days automated backups are retained
+  # Retain automated backups for N days.
   backup_retention_period = 5
 
-  # Daily window during which backups occur
+  # Daily backup window (UTC) for automated backups.
   preferred_backup_window = "07:00-09:00"
 
-  # Serverless v2 scaling configuration: capacity range in ACUs
+  # ----------------------------------------------------------------------------
+  # SERVERLESS V2 SCALING (ACU RANGE)
+  # ----------------------------------------------------------------------------
+  # Aurora capacity units (ACUs) define the allowed compute range.
   serverlessv2_scaling_configuration {
-    # Minimum Aurora capacity units (ACUs)
+    # Minimum capacity in ACUs.
     min_capacity = 0.5
 
-    # Maximum Aurora capacity units (ACUs)
+    # Maximum capacity in ACUs.
     max_capacity = 4.0
   }
 }
 
-#############################################################
-# PRIMARY INSTANCE — The Writer Node for the Aurora Cluster
-#############################################################
+# ==============================================================================
+# PRIMARY INSTANCE (WRITER)
+# ==============================================================================
+# Creates the writer node for the Aurora cluster.
+#
+# Notes:
+# - `instance_class = "db.serverless"` is used for Aurora Serverless v2.
+# - `engine` and `engine_version` are inherited from the cluster for consistency.
+# ==============================================================================
 resource "aws_rds_cluster_instance" "aurora_instance_primary" {
-  # Unique identifier for this cluster instance
+  # ----------------------------------------------------------------------------
+  # CORE IDENTIFIERS
+  # ----------------------------------------------------------------------------
+  # Instance identifier within the account/region.
   identifier = "aurora-mysql-instance-1"
 
-  # Reference to the Aurora cluster it belongs to
+  # Attach this instance to the cluster.
   cluster_identifier = aws_rds_cluster.aurora_cluster.id
 
-  # Serverless instance class for Aurora Serverless v2
+  # ----------------------------------------------------------------------------
+  # INSTANCE SHAPE / ENGINE
+  # ----------------------------------------------------------------------------
+  # Aurora Serverless v2 instance class.
   instance_class = "db.serverless"
 
-  # Must match the cluster's engine and version
+  # Match the cluster engine configuration.
   engine         = aws_rds_cluster.aurora_cluster.engine
   engine_version = aws_rds_cluster.aurora_cluster.engine_version
 
-  # Subnet group for networking
+  # ----------------------------------------------------------------------------
+  # NETWORKING
+  # ----------------------------------------------------------------------------
+  # Subnet group for this instance.
   db_subnet_group_name = aws_db_subnet_group.aurora_subnet_group.name
 
-  # Allow public access (exposes endpoint to the internet)
+  # Public access exposes the instance endpoint to the internet.
   publicly_accessible = true
 
-  # Enable Performance Insights monitoring
+  # ----------------------------------------------------------------------------
+  # OBSERVABILITY
+  # ----------------------------------------------------------------------------
+  # Enable Performance Insights for deeper database monitoring.
   performance_insights_enabled = true
 }
 
-#############################################################
-# REPLICA INSTANCE — Read-Only Node for High Availability
-#############################################################
+# ==============================================================================
+# REPLICA INSTANCE (READER)
+# ==============================================================================
+# Creates a read-only replica for availability and horizontal read scaling.
+#
+# Notes:
+# - Additional replicas can be added using the same pattern.
+# - Replicas share the same storage layer and replicate automatically.
+# ==============================================================================
 resource "aws_rds_cluster_instance" "aurora_instance_replica" {
-  # Unique identifier for the replica instance
+  # ----------------------------------------------------------------------------
+  # CORE IDENTIFIERS
+  # ----------------------------------------------------------------------------
+  # Instance identifier for the reader node.
   identifier = "aurora-mysql-instance-2"
 
-  # Reference to the same Aurora cluster
+  # Attach this instance to the same cluster.
   cluster_identifier = aws_rds_cluster.aurora_cluster.id
 
-  # Serverless instance class
+  # ----------------------------------------------------------------------------
+  # INSTANCE SHAPE / ENGINE
+  # ----------------------------------------------------------------------------
+  # Aurora Serverless v2 instance class.
   instance_class = "db.serverless"
 
-  # Same engine and version as primary
+  # Match the cluster engine configuration.
   engine         = aws_rds_cluster.aurora_cluster.engine
   engine_version = aws_rds_cluster.aurora_cluster.engine_version
 
-  # Subnet group for networking
+  # ----------------------------------------------------------------------------
+  # NETWORKING
+  # ----------------------------------------------------------------------------
+  # Subnet group for this instance.
   db_subnet_group_name = aws_db_subnet_group.aurora_subnet_group.name
 
-  # Make replica publicly accessible
+  # Public access exposes the instance endpoint to the internet.
   publicly_accessible = true
 
-  # Enable Performance Insights
+  # ----------------------------------------------------------------------------
+  # OBSERVABILITY
+  # ----------------------------------------------------------------------------
+  # Enable Performance Insights for deeper database monitoring.
   performance_insights_enabled = true
 }
 
-#############################################################
-# Aurora DB Subnet Group
-# Defines which subnets Aurora cluster instances can use
-# Must span at least 2 AZs for high availability
-#############################################################
+# ==============================================================================
+# AURORA DB SUBNET GROUP
+# ==============================================================================
+# Defines which subnets Aurora cluster instances can use.
+#
+# Requirements:
+# - Should span at least two AZs for high availability.
+# ==============================================================================
 resource "aws_db_subnet_group" "aurora_subnet_group" {
-  # Name of the subnet group
+  # Name of the subnet group.
   name = "aurora-subnet-group"
 
-  # List of subnet IDs included in this group
+  # Subnets included in this group (should be in different AZs).
   subnet_ids = [
     aws_subnet.rds-subnet-1.id,
     aws_subnet.rds-subnet-2.id
   ]
 
-  # Tag for identification and organization
+  # Resource tags.
   tags = {
     Name = "Aurora Subnet Group"
   }
