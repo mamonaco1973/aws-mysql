@@ -1,29 +1,4 @@
 #!/bin/bash
-
-############################################
-# SET DEFAULT AWS REGION
-############################################
-
-# Export the AWS region to ensure all AWS CLI commands run in the correct context
-export AWS_DEFAULT_REGION="us-east-2"
-
-############################################
-# STEP 1: DESTROY RDS INSTANCES
-############################################
-
-# Navigate into the Terraform directory for EC2 deployment
-cd 01-rds
-
-# Initialize Terraform backend and provider plugins (safe for destroy)
-terraform init
-
-# Destroy all RDS instances and related resources provisioned by Terraform
-terraform destroy -auto-approve  # Auto-approve skips manual confirmation prompts
-
-# Return to root directory after RDS teardown
-cd ..
-
-#!/bin/bash
 # ==============================================================================
 # FILE: destroy.sh
 # ==============================================================================
@@ -41,6 +16,15 @@ cd ..
 # - `terraform destroy -auto-approve` skips confirmation prompts.
 # - Intended for labs, demos, and controlled teardown scenarios only.
 # ==============================================================================
+
+# ==============================================================================
+# SAFETY: FAIL FAST
+# ==============================================================================
+# -e: exit on error
+# -u: treat unset variables as errors
+# -o pipefail: catch failures in pipelines
+# ==============================================================================
+set -euo pipefail
 
 # ==============================================================================
 # STEP 0: SET AWS DEFAULT REGION
@@ -62,5 +46,4 @@ terraform init
 # Destroy all Terraform-managed resources without prompting.
 terraform destroy -auto-approve
 
-# Return to the project root directory.
-cd ..
+# Return

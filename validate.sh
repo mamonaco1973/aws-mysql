@@ -19,6 +19,11 @@
 # - Endpoints are expected to be stored as hostnames (no port).
 # - Requires: aws CLI, jq, mysql client, wget, unzip.
 # ==============================================================================
+# Enable strict shell behavior:
+#   -e  Exit immediately on error
+#   -u  Treat unset variables as errors
+#   -o pipefail  Fail pipelines if any command fails
+set -euo pipefail
 
 # ==============================================================================
 # SETUP: AWS REGION
