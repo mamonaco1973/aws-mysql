@@ -19,10 +19,8 @@ variable "mysql_track" {
   default     = "8.4"
 }
 
-# Ask AWS for the newest engine version on that track, and get its param group family.
-data "aws_rds_engine_version" "mysql" {
-  engine             = "mysql"
-  preferred_versions = [var.mysql_track]
+locals {
+  mysql_parameter_group_family = "mysql${var.mysql_track}"
 }
 
 resource "aws_db_instance" "mysql_rds" {
@@ -37,7 +35,7 @@ resource "aws_db_instance" "mysql_rds" {
   # ----------------------------------------------------------------------------
   # MySQL engine family.
   engine         = "mysql"
-  engine_version = data.aws_rds_engine_version.mysql.version
+  engine_version = var.mysql_track
 
   # Small, burstable instance class suitable for dev/test.
   instance_class = "db.t4g.micro"
@@ -219,7 +217,7 @@ resource "aws_db_parameter_group" "mysql_custom_params" {
   name = "mysql-custom-params"
 
   # Parameter group family (must match MySQL major version).
-  family = data.aws_rds_engine_version.mysql.parameter_group_family
+  family = local.mysql_parameter_group_family
 
   # Description of the parameter group.
   description = "Custom MySQL parameters"
