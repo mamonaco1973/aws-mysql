@@ -89,6 +89,7 @@ echo "=================================================================="
 cd /tmp
 wget -q https://downloads.mysql.com/docs/sakila-db.zip
 unzip sakila-db.zip
+cd sakila 
 
 USER=${DB_USER}
 PASSWORD=${DB_PASSWORD}

@@ -30,7 +30,7 @@
 # # ==============================================================================
 # # AWS region where Secrets Manager, RDS, Aurora, and App Runner are deployed.
 # # ==============================================================================
-# AWS_REGION="us-east-2"
+AWS_REGION="us-east-2"
 
 # # ==============================================================================
 # # STEP 1: DOWNLOAD SAKILA SAMPLE DATABASE
@@ -164,3 +164,26 @@
 # # Output resolved URLs.
 # echo "NOTE: phpMyAdmin RDS URL:     https://$rds_url"
 # echo "NOTE: phpMyAdmin Aurora URL:  https://$aurora_url"
+
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGION="us-east-2"
+INSTANCE_NAME="phpmyadmin-rds"
+
+PUBLIC_DNS=$(aws ec2 describe-instances \
+  --region "${AWS_REGION}" \
+  --filters "Name=tag:Name,Values=${INSTANCE_NAME}" \
+  --query 'Reservations[0].Instances[0].PublicDnsName' \
+  --output text)
+
+if [[ -z "${PUBLIC_DNS}" || "${PUBLIC_DNS}" == "None" ]]; then
+  echo "ERROR: Instance has no public DNS name"
+  exit 1
+fi
+
+echo "============================================================"
+echo "phpMyAdmin URL for RDS Instance:"
+echo "http://${PUBLIC_DNS}/phpmyadmin/"
+echo "============================================================"
