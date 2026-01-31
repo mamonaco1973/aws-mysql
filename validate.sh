@@ -168,8 +168,9 @@ AWS_REGION="us-east-2"
 
 set -euo pipefail
 
-REGION="us-east-2"
 INSTANCE_NAME="phpmyadmin-rds"
+
+echo $AWS_REGION
 
 PUBLIC_DNS=$(aws ec2 describe-instances \
   --region "${AWS_REGION}" \
