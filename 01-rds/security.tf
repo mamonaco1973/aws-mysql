@@ -54,3 +54,49 @@ resource "aws_security_group" "rds_sg" {
     Name = "rds-sg"
   }
 }
+
+
+# --------------------------------------------------------------------------------
+# RESOURCE: aws_security_group.http_sg
+# --------------------------------------------------------------------------------
+# Description:
+#   Security group for a web-facing component that serves HTTP traffic
+#   on TCP port 80 (e.g., EC2, ALB, or containerized web service).
+#
+# Security:
+#   Public HTTP access is acceptable only when paired with proper
+#   hardening, authentication, and patching.
+# --------------------------------------------------------------------------------
+resource "aws_security_group" "http_sg" {
+  name        = "http-sg"
+  description = "Allow HTTP (80) inbound traffic and unrestricted egress."
+  vpc_id      = aws_vpc.rds-vpc.id
+
+  # ------------------------------------------------------------------------------
+  # INGRESS: HTTP (TCP/80)
+  # ------------------------------------------------------------------------------
+  # Allows inbound HTTP traffic from any IPv4 address.
+  # ------------------------------------------------------------------------------
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # ------------------------------------------------------------------------------
+  # EGRESS: All traffic
+  # ------------------------------------------------------------------------------
+  # Allows outbound access to backend services such as RDS or external APIs.
+  # ------------------------------------------------------------------------------
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "http-sg"
+  }
+}
