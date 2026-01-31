@@ -105,8 +105,8 @@ mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
 
 # Load Sakila schema.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
-  < ./01-rds/data/sakila-db/sakila-schema.sql
+  < sakila-schema.sql
 
 # Load Sakila data.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
-  < ./01-rds/data/sakila-db/sakila-data.sql
+  < sakila-data.sql
