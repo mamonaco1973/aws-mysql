@@ -26,9 +26,9 @@ resource "aws_security_group" "rds_sg" {
   # ----------------------------------------------------------------------------
   # Allow MySQL traffic on TCP port 3306.
   ingress {
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
 
     # Open to all IPv4 addresses (unsafe for production).
     cidr_blocks = ["0.0.0.0/0"]
@@ -39,9 +39,9 @@ resource "aws_security_group" "rds_sg" {
   # ----------------------------------------------------------------------------
   # Allow all outbound traffic.
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
 
     # Unrestricted outbound access.
     cidr_blocks = ["0.0.0.0/0"]
