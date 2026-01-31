@@ -101,7 +101,7 @@ echo "NOTE: Loading 'sakila' data into RDS"
 
 # Create the Sakila database if it does not already exist.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
-  -e "CREATE DATABASE IF NOT EXISTS sakila;"
+  -e "CREATE DATABASE IF NOT EXISTS sakila;" >> /root/userdata.log 2>> /root/userdata.log
 
 # Load Sakila schema.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
