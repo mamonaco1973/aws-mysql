@@ -105,7 +105,7 @@ mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
 
 # Load Sakila schema.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
-  < sakila-schema.sql >> /root/userdata.log 2>&1
+  < sakila-schema.sql >> /root/userdata.log 2>&1 || true
 
 # Load Sakila data.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
