@@ -18,12 +18,12 @@ export DEBIAN_FRONTEND=noninteractive
 # --------------------------------------------------------------------------------
 # Update system
 # --------------------------------------------------------------------------------
-sudo apt update -y
+apt update -y
 
 # --------------------------------------------------------------------------------
 # Install Apache + PHP + required extensions
 # --------------------------------------------------------------------------------
-sudo apt install -y \
+apt install -y \
   apache2 \
   php \
   libapache2-mod-php \
@@ -45,7 +45,7 @@ echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo de
 # --------------------------------------------------------------------------------
 # Install phpMyAdmin non-interactively
 # --------------------------------------------------------------------------------
-sudo apt install -y phpmyadmin
+apt install -y phpmyadmin
 
 # --------------------------------------------------------------------------------
 # Configure phpMyAdmin for Aurora
@@ -76,11 +76,11 @@ sudo systemctl restart apache2
 # --------------------------------------------------------------------------------
 # Final status
 # --------------------------------------------------------------------------------
-echo "=================================================================="
-echo "phpMyAdmin installed and configured (NO PROMPTS)"
-echo "Database endpoint : ${DB_ENDPOINT}"
-echo "Access URL        : http://<INSTANCE_IP>/phpmyadmin"
-echo "=================================================================="
+echo "==================================================================" >> /root/userdata.log 2>&1
+echo "phpMyAdmin installed and configured (NO PROMPTS)" >> /root/userdata.log 2>&1
+echo "Database endpoint : ${DB_ENDPOINT}" >> /root/userdata.log 2>&1
+echo "Access URL        : http://<INSTANCE_IP>/phpmyadmin" >> /root/userdata.log 2>&1
+echo "==================================================================" >> /root/userdata.log 2>&1
 
 # --------------------------------------------------------------------------------
 # Load the sample database
@@ -101,12 +101,12 @@ echo "NOTE: Loading 'sakila' data into RDS"
 
 # Create the Sakila database if it does not already exist.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
-  -e "CREATE DATABASE IF NOT EXISTS sakila;" >> /root/userdata.log 2>> /root/userdata.log
+  -e "CREATE DATABASE IF NOT EXISTS sakila;" >> /root/userdata.log 2>&1
 
 # Load Sakila schema.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
-  < sakila-schema.sql
+  < sakila-schema.sql >> /root/userdata.log 2>&1
 
 # Load Sakila data.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" sakila \
-  < sakila-data.sql
+  < sakila-data.sql >> /root/userdata.log 2>&1
