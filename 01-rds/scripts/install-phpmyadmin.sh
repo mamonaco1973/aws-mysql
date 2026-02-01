@@ -88,7 +88,7 @@ echo "==================================================================" >> /ro
 
 cd /tmp
 wget -q https://downloads.mysql.com/docs/sakila-db.zip
-unzip sakila-db.zip
+unzip sakila-db.zip  >> /root/userdata.log 2>&1
 cd sakila 
 
 USER=${DB_USER}
@@ -96,8 +96,8 @@ PASSWORD=${DB_PASSWORD}
 ENDPOINT=${DB_ENDPOINT}
 
 # Log endpoint information.
-echo "NOTE: Primary RDS Endpoint: $ENDPOINT"
-echo "NOTE: Loading 'sakila' data into RDS"
+echo "NOTE: Primary RDS Endpoint: $ENDPOINT"  >> /root/userdata.log 2>&1
+echo "NOTE: Loading 'sakila' data into RDS"  >> /root/userdata.log 2>&1
 
 # Create the Sakila database if it does not already exist.
 mysql -h "$ENDPOINT" -u "$USER" -p"$PASSWORD" \
