@@ -21,7 +21,7 @@ echo "NOTE: Validating that required commands are found in your PATH."
 # ==============================================================================
 # List of CLI tools required for this project.
 # ==============================================================================
-commands=("aws" "terraform" "jq" "mysql")
+commands=("aws" "terraform" "jq" )
 
 # Track overall validation status.
 all_found=true
