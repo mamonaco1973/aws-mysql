@@ -66,7 +66,7 @@ resource "aws_rds_cluster" "aurora_cluster" {
   # Aurora capacity units (ACUs) define the allowed compute range.
   serverlessv2_scaling_configuration {
     # Minimum capacity in ACUs.
-    min_capacity = 0.5
+    min_capacity = 0.0
 
     # Maximum capacity in ACUs.
     max_capacity = 4.0

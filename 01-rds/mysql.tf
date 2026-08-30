@@ -35,7 +35,7 @@ resource "aws_db_instance" "mysql_rds" {
   # ----------------------------------------------------------------------------
   # MySQL engine family.
   engine         = "mysql"
-  engine_version = var.mysql_track
+  #engine_version = var.mysql_track
 
   # Small, burstable instance class suitable for dev/test.
   instance_class = "db.t4g.micro"
