@@ -10,19 +10,6 @@
 # - This is NOT Aurora; storage and scaling characteristics differ.
 # ==============================================================================
 
-# ------------------------------------------------------------------------------
-# CONFIG
-# ------------------------------------------------------------------------------
-variable "mysql_track" {
-  type        = string
-  description = "MySQL track to pin (ex: 8.4 or 8.0)."
-  default     = "8.4"
-}
-
-locals {
-  mysql_parameter_group_family = "mysql${var.mysql_track}"
-}
-
 resource "aws_db_instance" "mysql_rds" {
   # ----------------------------------------------------------------------------
   # CORE IDENTIFIERS
